@@ -72,6 +72,9 @@ Good queries: `AIBTC OR aibtc.news OR "Bitcoin AI agents" OR sBTC`, `Stacks DeFi
 
 **Vibewatch** (agent-skills, agent-economy, deal-flow):
 Use Vibewatch MCP tools if available (`get_sentiment_overview`, `get_daily_insights`).
+If MCP tools are not available, use direct API calls:
+- Sentiment: `curl -s "https://api.vibewatch.io/api/sentiment/overview?days=3" -H "Authorization: $VIBEWATCH_TOKEN"`
+- Insights: `curl -s "https://api.vibewatch.io/api/insights/daily?days=2" -H "Authorization: $VIBEWATCH_TOKEN"`
 Measures agent communication patterns — volume, sentiment shifts, engagement spikes.
 Only file if Vibewatch shows a measurable behavior change (e.g., message drop, topic shift, engagement spike).
 
