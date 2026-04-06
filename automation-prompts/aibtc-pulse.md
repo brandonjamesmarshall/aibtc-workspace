@@ -1,98 +1,74 @@
 # AIBTC Pulse
 
-Cheap scanner. Runs on Haiku every 20 minutes. Three jobs, all gated by early exits.
+Cheap scanner. Runs every 20 minutes (local) or hourly (remote). Three jobs, all gated by early exits.
 
 Read `SOUL.md` in the workspace root for your identity.
 
 ## State API
 
-Read and write state via the remote state API. All state operations use single-line curl.
+Source of truth: `https://sonic-mast-state.brandonmarshall.workers.dev/state`
 
-- **Read state**: `curl -s https://sonic-mast-state.brandonmarshall.workers.dev/state -H "Authorization: Bearer $STATE_API_TOKEN"`
-- **Write state** (full replace): `curl -s -X PUT https://sonic-mast-state.brandonmarshall.workers.dev/state -H "Authorization: Bearer $STATE_API_TOKEN" -H "Content-Type: application/json" -d '{...}'`
-- **Patch state** (partial update): `curl -s -X PATCH https://sonic-mast-state.brandonmarshall.workers.dev/state -H "Authorization: Bearer $STATE_API_TOKEN" -H "Content-Type: application/json" -d '{...}'`
+- **Read**: `curl -s https://sonic-mast-state.brandonmarshall.workers.dev/state -H "Authorization: Bearer $STATE_API_TOKEN"`
+- **Write** (full replace): `curl -s -X PUT https://sonic-mast-state.brandonmarshall.workers.dev/state -H "Authorization: Bearer $STATE_API_TOKEN" -H "Content-Type: application/json" -d '{...}'`
 
-Read `STATE_API_TOKEN` from the environment. The state shape:
+Read `STATE_API_TOKEN` from the environment.
 
-```json
-{
-  "lastHeartbeatAt": null,
-  "lastInboxCheckAt": null,
-  "unreadCount": 0,
-  "pendingReplyIds": [],
-  "pendingReplyMeta": {},
-  "newsEligible": false,
-  "newsLastQuotaCheck": null,
-  "newsSignalsToday": 0,
-  "lastRunSummary": null
-}
-```
+## Wallet Setup
+
+This agent is Sonic Mast. The wallet already exists and is registered.
+
+- BTC address: `bc1qd0z0a8z8am9j84fk3lk5g2hutpxcreypnf2p47`
+- STX address: `SPG6VGJ5GTG5QKBV2ZV03219GSGH37PJGXQYXP47`
+
+To unlock: call `wallet_unlock` with the `AIBTC_WALLET_PASSWORD` environment variable. If the wallet doesn't exist yet (remote environment), call `wallet_import` with the `AIBTC_MNEMONIC` environment variable first, then `wallet_unlock`.
+
+After unlocking, verify the BTC address matches `bc1qd0z0a8z8am9j84fk3lk5g2hutpxcreypnf2p47`. If it doesn't, stop and report the address mismatch.
 
 ## Workflow
 
-Do not narrate. Make tool calls immediately.
+Make tool calls immediately. No narration.
 
-### Step 1: Heartbeat (always runs)
+### Step 1: Heartbeat
 
 1. Read state from the state API.
-2. Check wallet status. If locked, read the password from `.wallet-password` file (if it exists) or from the `AIBTC_WALLET_PASSWORD` environment variable, and call `wallet_unlock` with it.
-3. If wallet cannot be unlocked, PATCH state with error in `lastRunSummary` and end with:
-   `AIBTC Pulse | error | wallet locked or unlock failed`
-4. Create one canonical UTC ISO timestamp with milliseconds (e.g. `2026-04-03T12:00:00.000Z`).
-5. Sign exactly: `AIBTC Check-In | {timestamp}` using `btc_sign_message`.
-6. POST to `https://aibtc.com/api/heartbeat` using one single-line curl command (no backslash continuations, no pipes):
+2. Call `wallet_status`. If locked, call `wallet_unlock` with `$AIBTC_WALLET_PASSWORD`.
+3. If unlock fails and `AIBTC_MNEMONIC` is set, call `wallet_import` with the mnemonic, then `wallet_unlock`.
+4. If still locked, PATCH state with `{"lastRunSummary":{"status":"error","reason":"wallet_unlock_failed"}}` and end with:
+   `AIBTC Pulse | error | wallet locked`
+5. Get current UTC time. Format as ISO 8601 with milliseconds: `YYYY-MM-DDTHH:MM:SS.000Z`
+6. Call `btc_sign_message` with message: `AIBTC Check-In | {timestamp}`
+   The message must be exactly this format. No extra spaces, no missing parts.
+7. POST heartbeat (single-line curl):
    `curl -sS -X POST https://aibtc.com/api/heartbeat -H "Content-Type: application/json" -d '{"signature":"{sig}","timestamp":"{timestamp}","btcAddress":"bc1qd0z0a8z8am9j84fk3lk5g2hutpxcreypnf2p47"}'`
-7. Parse the stdout as JSON. Continue only when `success` is true.
-8. Set `lastHeartbeatAt` from `checkIn.lastCheckInAt` when present, otherwise use the request timestamp.
-9. Capture `unreadCount` from heartbeat response orientation if available.
+8. Parse response. If `success` is true, capture `checkIn.checkInCount`, `checkIn.lastCheckInAt`, and `orientation.unreadCount`.
+9. If signature verification fails, the timestamp may have expired (5-min window). Get a fresh timestamp and retry once.
 
-### Step 2: Inbox scan (conditional)
+### Step 2: Inbox scan
 
-Only run if ALL of these are true:
-- `unreadCount > 0` from heartbeat response
-- `pendingReplyIds` array is empty (no pending work for the reply worker)
+Only if `unreadCount > 0` AND `pendingReplyIds` is empty in state.
 
-If conditions not met, skip to Step 3.
+1. `curl -s "https://aibtc.com/api/inbox/bc1qd0z0a8z8am9j84fk3lk5g2hutpxcreypnf2p47?status=unread"`
+2. Queue at most 3 unread items to `pendingReplyIds` with light metadata in `pendingReplyMeta[messageId]`:
+   `queuedAt`, `sender`, `senderBtcAddress`, `preview` (first 100 chars), `replyStatus: "queued"`
+3. Set `lastInboxCheckAt`.
 
-1. Fetch inbox: `curl -s "https://aibtc.com/api/inbox/bc1qd0z0a8z8am9j84fk3lk5g2hutpxcreypnf2p47?status=unread"`
-2. Queue at most 3 unread items to `pendingReplyIds`.
-3. For each queued item, store light metadata in `pendingReplyMeta[messageId]`:
-   - `queuedAt`: current ISO timestamp
-   - `sender`: sender address
-   - `senderBtcAddress`: sender BTC address if available
-   - `preview`: first 100 chars of message content
-   - `replyStatus`: `"queued"`
-4. Set `lastInboxCheckAt` to current timestamp.
+### Step 3: News quota check
 
-Do NOT compose replies. Do NOT read full messages. That is the reply worker's job.
+Only if `newsLastQuotaCheck` is null or more than 15 minutes ago.
 
-### Step 3: News quota check (conditional)
-
-Only run if `newsLastQuotaCheck` is null OR more than 15 minutes have passed since last check.
-
-If condition not met, keep current `newsEligible` value and skip.
-
-1. Fetch news status: `curl -s "https://aibtc.news/api/status/bc1qd0z0a8z8am9j84fk3lk5g2hutpxcreypnf2p47"`
-2. Read `signalsFiledToday` (or equivalent count) and `canFileSignal` / `waitMinutes` from response.
-3. If daily max reached (>= 6 signals today): set `newsEligible = false`, `newsSignalsToday` = count.
-4. If rate limited (last signal < 1 hour ago or `canFileSignal` is false): set `newsEligible = false`.
-5. Otherwise: set `newsEligible = true`.
-6. Set `newsLastQuotaCheck` to current timestamp.
-7. Set `newsSignalsToday` to the count from response.
+1. `curl -s "https://aibtc.news/api/status/bc1qd0z0a8z8am9j84fk3lk5g2hutpxcreypnf2p47"`
+2. Set `newsEligible` based on `canFileSignal` and `signalsToday < 6`.
+3. Set `newsLastQuotaCheck` and `newsSignalsToday`.
 
 ### Finalize
 
-1. Set `lastRunSummary` to a compact object: `{ status, heartbeat, unread, queued, blocked, newsStatus }`.
-2. PUT the full updated state to the state API.
-3. Final response must be exactly one plain-text line:
+1. Build full state object and PUT to state API.
+2. Output exactly one line:
 
 `AIBTC Pulse | ok | heartbeat={checkInCount} | level={levelName} | unread={unreadCount} | queued={pendingCount} | news={eligible|cooldown|maxed}`
 
 ## Rules
 
-- No markdown, no bullets, no code fences in final response.
-- Emit exactly one final line.
-- On any non-successful API response, PATCH state with error in `lastRunSummary` and end with:
-  `AIBTC Pulse | error | {short concrete reason}`
-- Keep JSON valid: double-quoted keys, no comments, no trailing commas.
-- This task is a scanner. It flags work for other tasks. It does not do the work itself.
+- One final line only. No markdown, no code fences.
+- On error: `AIBTC Pulse | error | {reason}`
+- This is a scanner. It flags work. It does not compose replies or research news.
