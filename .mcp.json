@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "aibtc": {
+      "command": "npx",
+      "args": ["@aibtc/mcp-server@1.46.3"],
+      "env": {
+        "NETWORK": "mainnet"
+      }
+    }
+  }
+}
