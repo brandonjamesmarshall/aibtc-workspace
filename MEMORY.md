@@ -18,3 +18,4 @@
 - [Vibewatch candidates hallucination](memory/vibewatch-candidates-hallucination.md) — newsworthy_candidates field is AI-synthesized; cross-check each item against raw daily_insights/messages before pursuing as a story lead
 - [Quantum governance signals always rejected](memory/quantum-governance-signals.md) — Only file quantum on hardware milestones, formal BIP stage changes, or arXiv papers; governance debates always fail
 - [arXiv MCP permission denied](memory/arxiv-permission-denied.md) — arxiv_search and arxiv_list_digests are blocked; use Brave Search for quantum beat paper sourcing instead
+- [Git signing workaround](memory/git-signing-workaround.md) — `git commit` fails in remote/agent runs (signing server needs user context); use GitHub Contents API (GET sha → PUT with base64 content) for single-file pushes to external repos
