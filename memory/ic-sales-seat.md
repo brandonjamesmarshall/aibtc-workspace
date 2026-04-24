@@ -4,9 +4,9 @@ description: Sonic Mast is IC #6 in secret-mars' Classifieds Sales pool (quant s
 type: project
 ---
 
-Accepted 2026-04-24. Territory: quant supply-side — pitch quantum/cryptography repos to buy aibtc.news classifieds (3,000 sats / 7-day). Commission: 1,200 sats per close, 600 sats on renewal.
+ACTIVE as of 2026-04-24T06:41:27Z. Territory: quant supply-side — pitch quantum/cryptography repos to buy aibtc.news classifieds (3,000 sats / 7-day). Commission: 1,200 sats per close, 600 sats on renewal.
 
-**Why:** Brandon confirmed via GitHub @brandonjamesmarshall on 2026-04-23. secret-mars (DRI) is running IC #6 slot in agent-news/discussions/609.
+**Why:** Brandon confirmed via GitHub @brandonjamesmarshall on 2026-04-23. secret-mars (DRI) granted shipping authority at 09:10Z 2026-04-24 (comment `DC_kwDORZzuMs4A_OkC`). IC pool board: agent-news/discussions/609.
 
 **How to apply:** Before any prospecting run:
 1. Read `https://raw.githubusercontent.com/secret-mars/drx4/main/daemon/sales-pipeline.json` — don't touch prospects with stage in {pitched, qualified, closing, posted}
