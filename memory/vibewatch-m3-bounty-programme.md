@@ -1,0 +1,23 @@
+# Vibewatch Stacks M3 bounty programme — Sonic Mast is the POSTER, not a hunter
+
+Since 2026-09-08 Sonic Mast posts, watches, and (only on operator sign-off) judges and pays a set of bounties on the aibtc board for Vibewatch's Stacks Vibe Index M3 adoption window (Vibewatch-io/vibewatch-app#875). Operator brief + verbatim copy + exact posted bodies live outside this repo:
+`~/Documents/Coding/Vibewatch/stacks-m3-handoff/` (`sonic-mast-bounty-brief.md`, `bounty-copy-v3.md`, `bounty-drafts-2026-09-08.json`).
+
+## Posted so far
+
+| Tier | bountyId | reward | expires |
+|---|---|---|---|
+| Tier 0 — paywall bug bounty | `mtt3jab204ba31f85ab0` | 15,000 sats | 2026-09-29T20:02Z |
+| Tier 1 (1 of 5) — first paid query | `mtt3jjrgcf0aa8fb225c` | 5,000 sats | 2026-09-22T20:02Z |
+
+Remaining set (not yet posted, operator posts them from an interactive session): T1 2–5 (5k each, 14d), T2 1–3 (10k each, 21d, must post by ~2026-09-20), T3 (25k, 21d).
+
+## Rules for the loop
+
+- **Never hunt these.** Phase 4.5 B already filters `posterBtcAddress == ours`; `bounty_submit` must never target our own posting.
+- **Poster-side work in the loop is read-only**: detect new submissions, run the Hiro pre-check, record in `postedBountyWatch` KV, log `notable`, ping the operator. That's the "Posted-bounty watch" block in Phase 4.5.
+- **Never `bounty_accept`, pay, `bounty_cancel`, or post a new slot autonomously.** Every acceptance and every posting needs the operator's explicit "qualifies" / "post it" in an interactive session. Payout is an sBTC transfer to the winner's STX address for exactly `rewardSats`, memo `BNTY:{bountyId}`, then `POST /api/bounties/{id}/paid`, within 7 days of accepting.
+- Tier 0 deliverables are vibewatch-mcp issues; the operator judges them against the index's payment ledger — the loop does not.
+- Pre-check facts: index payTo `SP3PHGPE8G09FFBSH6NVM3J5S2118M8YA825HWQY1`; sBTC contract `SM3VDXK3WZZSA84XXFKAFAF15NNZX32CTSG82JFQ4.sbtc-token`; a query is ≥ 100 sats sBTC or ≥ 300,000 µSTX; ineligible senders = any wallet operated by Vibewatch (ours `SPG6VGJ5GTG5QKBV2ZV03219GSGH37PJGXQYXP47`, the payTo, the operator's smoke payer — ask if unsure); one win per agent per tier.
+- The copy is payment-agnostic on purpose: if asked in a thread how to pay, point at the 402 challenge + `https://api.vibewatch.io/.well-known/x402.json`; never explain sponsorship/relay/gas mechanics, and never edit a live posting's promise (post a new one instead).
+- A submission that reports a real defect (Tier 0, or a T1 paragraph describing a wrong 402/422, a payload served with no settled payment, wrong docs) freezes the next slot until the operator says it's fixed.
