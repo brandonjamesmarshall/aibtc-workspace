@@ -9,10 +9,11 @@ Since 2026-09-08 Sonic Mast posts, watches, and (only on operator sign-off) judg
 |---|---|---|---|
 | Tier 0 — paywall bug bounty | `mtt3jab204ba31f85ab0` | 15,000 sats | 2026-09-29T20:02Z |
 | Tier 1 (1 of 5) — first paid query | `mtt3jjrgcf0aa8fb225c` | 5,000 sats | **PAID 2026-09-09** to Celestial Shark `SP2YTGB7CDQP1E4T79CQMJ1DT7JB3VH4JMMEB4KEJ` (payout txid `0x4b97ff85…9a9a`) |
+| Tier 1 (2 of 5) — first paid query | `mttjxw940faa8df06de7` | 5,000 sats | 2026-09-23T03:30Z |
 
 Tier-1 winners so far (ineligible for T1 2–5): `SP2YTGB7CDQP1E4T79CQMJ1DT7JB3VH4JMMEB4KEJ`. Winners/decisions are also tracked in the `postedBountyWatch` KV (`winners.tier1[]`).
 
-Remaining set (not yet posted, operator posts them from an interactive session): T1 2–5 (5k each, 14d), T2 1–3 (10k each, 21d, must post by ~2026-09-20), T3 (25k, 21d).
+Remaining set (not yet posted, operator posts them from an interactive session): T1 3–5 (5k each, 14d), T2 1–3 (10k each, 21d, must post by ~2026-09-20), T3 (25k, 21d).
 
 ## Rules for the loop
 
